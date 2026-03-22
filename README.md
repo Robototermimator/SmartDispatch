@@ -1,4 +1,3 @@
-README.md# SmartDispatch-A-Resource-Allocation-and-Task-Scheduling-Optimiser
 # SmartDispatch: A Resource Allocation and Task Scheduling Optimiser
 
 SmartDispatch is a Python project for assigning limited agents (drivers/workers) to many tasks while maximising a score.
