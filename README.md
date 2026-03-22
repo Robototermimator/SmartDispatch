@@ -1,24 +1,23 @@
+README.md# SmartDispatch-A-Resource-Allocation-and-Task-Scheduling-Optimiser
 # SmartDispatch: A Resource Allocation and Task Scheduling Optimiser
 
-SmartDispatch is a hackathon-friendly optimisation project that assigns limited agents (drivers/workers) to many tasks while maximising a scoring function.
+SmartDispatch is a Python project for assigning limited agents (drivers/workers) to many tasks while maximising a score.
 
-## Problem statement
-Each **task** has:
-- location `(x, y)`
-- priority `1..5`
-- estimated duration
-- optional deadline
+## 1) What this project does
+Given:
+- a set of tasks with `(x, y)` location, priority, duration, and optional deadline
+- a set of agents with start location and workload limit
 
-Each **agent** has:
-- current location
-- workload limit (time budget)
+SmartDispatch computes:
+- which agent takes which tasks
+- in what order each agent executes them
+- a final score and breakdown metrics
 
-The system should output:
-- task-to-agent assignment
-- execution order per agent
-- final score and diagnostics
+---
 
-## Scoring model
+## 2) Scoring formula
+The current scorer uses:
+
 ```text
 Score =
 (CompletedTasks × 100)
@@ -28,12 +27,31 @@ Score =
 - (IdlePenalty × 5)
 ```
 
-## Algorithms implemented
-1. **Greedy** (`solver_greedy.py`): nearest feasible task first, then priority tie-break.
-2. **Heuristic** (`solver_heuristic.py`): weighted utility of priority, travel cost, and lateness risk.
-3. **Local Search** (`solver_local_search.py`): starts from heuristic and reorders task sequences when score improves.
+Where:
+- `CompletedTasks`: number of assigned and executed tasks
+- `PriorityPointsCompleted`: sum of task priorities completed
+- `TotalDistance`: total travel distance across all agents
+- `LatePenalty`: summed lateness (time units after deadlines)
+- `IdlePenalty`: number of agents with no assigned tasks
 
-## Project structure
+---
+
+## 3) Solvers included
+- **Greedy (`solver_greedy.py`)**
+  - Chooses nearest feasible task first.
+  - Fast baseline.
+
+- **Heuristic (`solver_heuristic.py`)**
+  - Uses weighted utility of priority, travel, and lateness risk.
+  - Designed for easy weight tuning.
+
+- **Local Search (`solver_local_search.py`)**
+  - Starts from heuristic result.
+  - Reorders per-agent task sequences and keeps improvements.
+
+---
+
+## 4) Project structure
 ```text
 smartdispatch/
 ├── data/
@@ -61,55 +79,102 @@ smartdispatch/
 └── README.md
 ```
 
-## Quick start
+---
+
+## 5) Installation
+
+### Option A: install all dependencies (recommended)
 ```bash
 python -m venv .venv
-source .venv/bin/activate
+source .venv/bin/activate       # Windows: .venv\Scripts\activate
+python -m pip install --upgrade pip
 pip install -r requirements.txt
+```
+
+### Option B: install only Streamlit
+```bash
+python -m pip install --upgrade pip
+pip install streamlit
+```
+
+Verify Streamlit:
+```bash
+streamlit --version
+```
+
+If your shell cannot find `streamlit`, run:
+```bash
+python -m streamlit --version
+```
+
+---
+
+## 6) Run from CLI
+Generate a scenario and solve it:
+
+```bash
 python src/main.py --agents 10 --tasks 50 --solver heuristic --seed 42
 ```
 
-## Example CLI output
-```text
-Scenario generated: 10 agents, 50 tasks
-Solver used: heuristic
-Unassigned tasks: 4
-Completed tasks: 46
-Priority points: 162
-Total distance: 212.40
-Late sum: 3.00
-Idle agents: 0
-Final score: 4280.00
+Run with a different solver:
+
+```bash
+python src/main.py --agents 10 --tasks 50 --solver greedy --seed 42
+python src/main.py --agents 10 --tasks 50 --solver local_search --seed 42
 ```
 
-## Benchmark strategy
-- Generate many seeded scenarios (`seed=0..N`) with the same size.
-- Run each solver on every scenario.
-- Track mean/min/max score to compare solver stability.
+Save a generated scenario:
 
-Run:
+```bash
+python src/main.py --agents 10 --tasks 50 --solver heuristic --save-scenario data/generated_cases/case_01.json
+```
+
+Load a scenario:
+
+```bash
+python src/main.py --scenario-path data/generated_cases/case_01.json --solver heuristic
+```
+
+---
+
+## 7) Benchmarking
+Run the benchmark script to compare solver score distributions over multiple seeds:
+
 ```bash
 python experiments/benchmark.py
 ```
 
-## Optional dashboard
+Current benchmark output may show that heuristic/local search need additional tuning to consistently beat greedy; this is expected at MVP stage.
+
+---
+
+## 8) Dashboard (optional)
+If Streamlit is installed:
+
 ```bash
 streamlit run dashboard/app.py
 ```
 
-## 14-day development plan
-- Days 1–2: scenario generator
-- Days 3–4: scoring engine
-- Days 5–6: baseline greedy solver
-- Days 7–8: heuristic solver
-- Days 9–10: local search improvements
-- Day 11: benchmark runs
-- Day 12: CLI/output cleanup
-- Day 13: optional dashboard
-- Day 14: final tuning and polishing
+If command resolution fails:
 
-## Future improvements
-- Simulated annealing / genetic algorithm
-- Better travel-time model (road graph vs Euclidean)
-- Dynamic online task arrival
-- Hyperparameter tuning automation
+```bash
+python -m streamlit run dashboard/app.py
+```
+
+---
+
+## 9) Testing
+Run tests:
+
+```bash
+pytest -q
+```
+
+---
+
+## 10) Improvement roadmap
+- Tune heuristic utility weights in `experiments/tuning.py`
+- Improve local search neighbourhood moves (swap between agents, insert/move task)
+- Add simulated annealing or GA for broader search
+- Replace Euclidean distance with map/road-time travel model
+- Add richer visualisation of routes and lateness
